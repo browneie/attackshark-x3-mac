@@ -116,7 +116,7 @@ struct ContentView: View {
         let title = s.isCable ? "Charging" : (s.battery ?? "Battery")
         let detail = s.isCable ? (s.battery ?? "on USB power") : (s.battery == nil ? "waiting for a report" : "last report")
         return HStack(spacing: 10) {
-            Image(systemName: s.isCable ? "battery.100.bolt" : "battery.25")
+            Image(systemName: s.isCable ? "battery.100.bolt" : batterySymbol(s.batteryLevel))
                 .symbolRenderingMode(.hierarchical)
                 .font(.title3)
             VStack(alignment: .leading, spacing: 1) {
@@ -127,6 +127,11 @@ struct ContentView: View {
         .padding(.horizontal, 12).padding(.vertical, 8)
         .background(Palette.card, in: RoundedRectangle(cornerRadius: 10))
         .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Palette.stroke))
+    }
+
+    private func batterySymbol(_ level: Int?) -> String {
+        guard let level else { return "battery.0" }
+        return "battery.\([0, 25, 50, 75, 100][min(4, (level * 4 + 5) / 10)])"
     }
 
     private var performance: some View {

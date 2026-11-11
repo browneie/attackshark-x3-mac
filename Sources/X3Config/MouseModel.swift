@@ -33,6 +33,7 @@ struct Snapshot {
     var isCable = false
     var firmware = ""
     var battery: String?
+    var batteryLevel: Int?
     var polling: PollingRate?
     var dpi: DPISettings?
     var prefs: Preferences?
@@ -99,6 +100,7 @@ final class MouseModel: ObservableObject {
         s.prefs = try m.readPreferences()
         s.buttons = try m.readButtons().used
         s.battery = m.battery?.description
+        s.batteryLevel = m.battery?.level
         return s
     }
 

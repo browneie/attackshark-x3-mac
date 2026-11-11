@@ -78,7 +78,7 @@ follows that documentation. It differs on the X3 receiver in these ways:
 - Byte 1 of a write is the total length. Over the cable, replies carry the same value; over the receiver they carry it + 2.
 - The cable exposes extra reports (0x23–0x2e, some up to 262 bytes) that the receiver doesn't. They are undocumented and blocked.
 - A read is `SET 0xA0 [id, len, 0, profile]`, then a poll of `GET 0xA0` until it returns `01`, then `GET id`.
-- Write acknowledgments arrive as input report `03 10 50 <status> <id>`. Battery arrives as `03 10 40 <state> <percent>`.
+- Write acknowledgments arrive as input report `03 10 50 <status> <id>`. Battery arrives as `03 10 40 <state> <level>`, where the level runs 0–10 (the X11 sends a percentage).
 
 ### Safety rules in code (`Sources/X3Kit/Safety.swift`)
 

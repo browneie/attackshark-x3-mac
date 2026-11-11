@@ -12,7 +12,7 @@ public final class X3Mouse {
 
     private func observe(_ e: Event) {
         deviceID = e.deviceID
-        if e.code == 0x40 || e.code == 0x41 { battery = Battery(state: e.p1, percent: Int(e.p2)) }
+        if e.code == 0x40 || e.code == 0x41 { battery = Battery(state: e.p1, level: min(Int(e.p2), 10)) }
     }
 
     /// Single-use read authorisation (0xA0), then GET_REPORT of the target.
@@ -138,7 +138,9 @@ public final class X3Mouse {
 
 public struct Battery {
     public let state: UInt8
-    public let percent: Int
+    /// The X3 reports 0–10, not a percentage like the X11 does.
+    public let level: Int
+    public var percent: Int { level * 10 }
     public var charging: Bool { state == 0x03 }
     public var description: String {
         switch state {
