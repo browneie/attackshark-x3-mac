@@ -127,6 +127,9 @@ public struct Preferences {
     static func checksumOK(_ b: [UInt8]) -> Bool { b.count >= 13 && checksum(b) == UInt16(b[11]) << 8 | UInt16(b[12]) }
 
     public static let debounceRange = stride(from: 4, through: 50, by: 2).map { $0 }
+    /// Sleep is stored in half minutes (0.5-30 min); deep sleep in whole minutes (1-60).
+    public static let sleepRange = 1...60
+    public static let deepSleepRange = 1...60
 
     public var lightingMode: UInt8 { raw[3] >> 4 }
     public var ledSpeed: UInt8 { raw[4] & 0x0f }
@@ -139,6 +142,22 @@ public struct Preferences {
     func setting(debounceMs ms: Int) -> [UInt8] {
         var b = raw
         b[10] = UInt8(ms / 2)
+        return Preferences.sealed(b)
+    }
+
+    /// Only the timer bits change: offsets 4 and 5 also hold LED speed and brightness in their low nibbles.
+    func setting(sleepHalfMinutes: Int? = nil, deepSleepMinutes: Int? = nil) -> [UInt8] {
+        var b = raw
+        if let s = sleepHalfMinutes { b[9] = UInt8(s) }
+        if let d = deepSleepMinutes {
+            b[4] = UInt8(d) & 0xf0 | b[4] & 0x0f
+            b[5] = (UInt8(d) & 0x0f) << 4 | b[5] & 0x0f
+        }
+        return Preferences.sealed(b)
+    }
+
+    static func sealed(_ bytes: [UInt8]) -> [UInt8] {
+        var b = bytes
         let c = Preferences.checksum(b)
         b[11] = UInt8(c >> 8); b[12] = UInt8(c & 0xff)
         return b

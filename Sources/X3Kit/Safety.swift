@@ -45,7 +45,9 @@ enum Safety {
             }
         case 0x05:
             guard b[1] == lengthByte[0x05], (1...5).contains(b[2]), Preferences.checksumOK(b),
-                  Preferences.debounceRange.contains(Int(b[10]) * 2) else {
+                  Preferences.debounceRange.contains(Int(b[10]) * 2),
+                  Preferences.sleepRange.contains(Int(b[9])),
+                  Preferences.deepSleepRange.contains(Int(b[4] & 0xf0 | b[5] >> 4)) else {
                 throw X3Error.blocked("malformed preferences report")
             }
         default: break

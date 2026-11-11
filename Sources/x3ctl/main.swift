@@ -13,6 +13,7 @@ usage: x3ctl <command> [--trace]
   dpi lod <1|2|0.7>            lift-off distance in mm
   dpi angle-snap|motion-sync|ripple <on|off>
   debounce [ms]                show or set button debounce (4-50, even)
+  sleep [min] [deep min]       show or set the sleep (0.5-30) and deep-sleep (1-60) timers
   buttons                      show the button assignments
   battery                      wait for a battery report
   events [seconds]             print the mouse's status events (DPI button, battery…)
@@ -122,6 +123,13 @@ do {
     case "battery":
         mouse.listen(5)
         print("battery:", mouse.battery?.description ?? "no report within 5 s; move the mouse and retry")
+    case "sleep":
+        if args.count > 1 {
+            guard let m = Double(args[1]) else { fail("usage: sleep [minutes] [deep-sleep minutes]") }
+            try mouse.setSleep(minutes: m, deepSleepMinutes: args.count > 2 ? Int(args[2]) : nil)
+        }
+        let p = try mouse.readPreferences()
+        print("sleep after \(p.sleepMinutes) min, deep sleep after \(p.deepSleepMinutes) min")
     case "events":
         let seconds = Double(args.count > 1 ? args[1] : "") ?? 15
         mouse.hid.trace = true

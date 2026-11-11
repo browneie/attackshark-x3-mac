@@ -101,6 +101,14 @@ final class MouseModel: ObservableObject {
         run("Setting stage \(stage) to \(dpi) DPI…") { try $0.setStageDPI(stage: stage, dpi: dpi) }
     }
 
+    func setSleep(_ minutes: Double) {
+        run("Setting sleep timer…") { try $0.setSleep(minutes: minutes) }
+    }
+
+    func setDeepSleep(_ minutes: Int) {
+        run("Setting deep-sleep timer…") { try $0.setSleep(deepSleepMinutes: minutes) }
+    }
+
     func setDebounce(_ ms: Int) {
         run("Setting debounce…") { try $0.setDebounce(ms: ms) }
     }

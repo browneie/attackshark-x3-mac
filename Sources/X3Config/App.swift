@@ -6,9 +6,11 @@ struct X3ConfigApp: App {
     var body: some Scene {
         WindowGroup("X3 Config") {
             ContentView()
-                .frame(width: 1000, height: 850)
+                .frame(minWidth: 860, minHeight: 600)
         }
-        .windowResizability(.contentSize)
+        // macOS saves the frame itself, so the window reopens at whatever size it was left.
+        .defaultSize(width: 1000, height: 850)
+        .windowResizability(.contentMinSize)
     }
 }
 
@@ -34,7 +36,7 @@ struct Card<Content: View, Accessory: View>: View {
             content
         }
         .padding(20)
-        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Palette.card, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Palette.stroke))
     }
@@ -57,6 +59,7 @@ struct ContentView: View {
                     if let dpi = model.snapshot.dpi {
                         StagesCard(dpi: dpi, model: model)
                         HStack(alignment: .top, spacing: 20) { performance; sensor(dpi) }
+                            .fixedSize(horizontal: false, vertical: true)
                         buttons
                     } else if !model.busy {
                         emptyState
@@ -159,8 +162,36 @@ struct ContentView: View {
                     .labelsHidden()
                     .fixedSize()
                 }
+                HStack {
+                    Text("Sleep after")
+                    Spacer()
+                    Picker("Sleep after", selection: Binding(
+                        get: { prefs.sleepMinutes },
+                        set: { model.setSleep($0) })) {
+                        ForEach(Set([0.5, 1, 2, 3, 5, 10, 15, 20, 30, prefs.sleepMinutes]).sorted(), id: \.self) { Text(minutes($0)).tag($0) }
+                    }
+                    .labelsHidden()
+                    .fixedSize()
+                }
+                HStack {
+                    Text("Deep sleep after")
+                    Spacer()
+                    Picker("Deep sleep after", selection: Binding(
+                        get: { prefs.deepSleepMinutes },
+                        set: { model.setDeepSleep($0) })) {
+                        ForEach(Set([1, 5, 10, 15, 20, 30, 45, 60, prefs.deepSleepMinutes]).sorted(), id: \.self) { Text(minutes(Double($0))).tag($0) }
+                    }
+                    .labelsHidden()
+                    .fixedSize()
+                }
+                Text("A sleeping mouse wakes when you move it. Longer timers keep it ready for longer but use more battery.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
         }
+    }
+
+    private func minutes(_ m: Double) -> String {
+        m < 1 ? "30 seconds" : m == 1 ? "1 minute" : m == m.rounded() ? "\(Int(m)) minutes" : "\(m) minutes"
     }
 
     private func sensor(_ d: DPISettings) -> some View {

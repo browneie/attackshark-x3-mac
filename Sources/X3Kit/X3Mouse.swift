@@ -133,6 +133,26 @@ public final class X3Mouse {
         return after
     }
 
+    /// Sets the sleep timer (0.5-30 min, in half-minute steps) and/or the deep-sleep timer (1-60 min).
+    @discardableResult
+    public func setSleep(minutes: Double? = nil, deepSleepMinutes: Int? = nil) throws -> Preferences {
+        let half = minutes.map { Int(($0 * 2).rounded()) }
+        if let half, !Preferences.sleepRange.contains(half) || Double(half) != minutes! * 2 {
+            throw X3Error.blocked("sleep must be 0.5–30 minutes in half-minute steps")
+        }
+        if let d = deepSleepMinutes, !Preferences.deepSleepRange.contains(d) { throw X3Error.blocked("deep sleep must be 1–60 minutes") }
+        let current = try readPreferences()
+        try write(current.setting(sleepHalfMinutes: half, deepSleepMinutes: deepSleepMinutes))
+        listen(settleAfterWrite)
+        let after = try readPreferences()
+        guard half.map({ Double($0) / 2 == after.sleepMinutes }) ?? true,
+              deepSleepMinutes.map({ $0 == after.deepSleepMinutes }) ?? true,
+              after.ledSpeed == current.ledSpeed, after.brightness == current.brightness else {
+            throw X3Error.unexpected("Change did not stick; mouse reads back sleep \(after.sleepMinutes) min, deep sleep \(after.deepSleepMinutes) min")
+        }
+        return after
+    }
+
     @discardableResult
     public func setDebounce(ms: Int) throws -> Preferences {
         guard Preferences.debounceRange.contains(ms) else { throw X3Error.blocked("debounce must be 4–50 ms in steps of 2") }
