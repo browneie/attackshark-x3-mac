@@ -6,6 +6,8 @@ import X3Kit
 final class MouseWorker: Thread {
     private let lock = NSCondition()
     private var jobs: [() -> Void] = []
+    /// Runs on this thread whenever there is no job; returns false when there is nothing to listen to.
+    var idle: () -> Bool = { false }
 
     override init() {
         super.init()
@@ -20,7 +22,15 @@ final class MouseWorker: Thread {
     override func main() {
         while true {
             lock.lock()
-            while jobs.isEmpty { lock.wait() }
+            if jobs.isEmpty {
+                lock.unlock()
+                if !idle() {
+                    lock.lock()
+                    if jobs.isEmpty { lock.wait(until: Date().addingTimeInterval(0.25)) }
+                    lock.unlock()
+                }
+                continue
+            }
             let job = jobs.removeFirst()
             lock.unlock()
             job()
@@ -56,6 +66,12 @@ final class MouseModel: ObservableObject {
     /// Plugging or unplugging the cable or receiver fires a burst of events, and a new device needs a moment
     /// before it answers, so reconnection waits for things to settle.
     init() {
+        // Listening is passive: it only receives what the mouse already sends, so the pointer never hitches.
+        worker.idle = { [weak self] in
+            guard let self, let mouse = self.mouse else { return false }
+            mouse.idle(0.1)
+            return true
+        }
         watcher = DeviceWatcher { [weak self] in
             guard let self else { return }
             self.reconnectWork?.cancel()
@@ -89,6 +105,11 @@ final class MouseModel: ObservableObject {
         run("Setting debounce…") { try $0.setDebounce(ms: ms) }
     }
 
+    private func showActiveStage(_ stage: Int) {
+        guard let dpi = snapshot.dpi, stage <= dpi.stageCount, stage != dpi.activeStage else { return }
+        snapshot.dpi = dpi.setting(activeStage: stage)
+    }
+
     private static func readAll(_ m: X3Mouse) throws -> Snapshot {
         m.listen(0.3)
         var s = Snapshot()
@@ -117,6 +138,9 @@ final class MouseModel: ObservableObject {
                 if fresh { self.mouse = nil }
                 if self.mouse == nil {
                     self.mouse = try X3Mouse()
+                    self.mouse!.onStageChange = { [weak self] stage in
+                        DispatchQueue.main.async { self?.showActiveStage(stage) }
+                    }
                     self.mouse!.listen(0.5)
                 }
                 try body(self.mouse!)

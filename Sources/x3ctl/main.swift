@@ -15,6 +15,7 @@ usage: x3ctl <command> [--trace]
   debounce [ms]                show or set button debounce (4-50, even)
   buttons                      show the button assignments
   battery                      wait for a battery report
+  events [seconds]             print the mouse's status events (DPI button, battery…)
   measure [seconds] [mm]       count pointer reports while you move the mouse
   read <hex id>                dump one allowlisted report (debugging)
 """
@@ -121,6 +122,10 @@ do {
     case "battery":
         mouse.listen(5)
         print("battery:", mouse.battery?.description ?? "no report within 5 s; move the mouse and retry")
+    case "events":
+        let seconds = Double(args.count > 1 ? args[1] : "") ?? 15
+        mouse.hid.trace = true
+        mouse.listen(seconds)
     case "read":
         guard args.count > 1, let id = UInt8(args[1].replacingOccurrences(of: "0x", with: ""), radix: 16) else { fail("usage: read <hex id>") }
         print(hexString(try mouse.read(id)))

@@ -4,6 +4,8 @@ public final class X3Mouse {
     public let hid: HIDDevice
     public private(set) var deviceID: UInt8?
     public private(set) var battery: Battery?
+    /// Called on the mouse's thread when the DPI button switches stage (1-based).
+    public var onStageChange: ((Int) -> Void)?
 
     public init() throws {
         hid = try HIDDevice.open()
@@ -11,6 +13,8 @@ public final class X3Mouse {
     }
 
     private func observe(_ e: Event) {
+        // DPI button events arrive with device ID 0x00, so only the battery report identifies the mouse.
+        if e.code == 0x10, (1...8).contains(e.p1) { onStageChange?(Int(e.p1)); return }
         deviceID = e.deviceID
         if e.code == 0x40 || e.code == 0x41 { battery = Battery(state: e.p1, level: min(Int(e.p2), 10)) }
     }
@@ -142,6 +146,12 @@ public final class X3Mouse {
 
     /// Lets queued events (battery, device ID) arrive.
     public func listen(_ seconds: Double) { hid.pump(seconds) }
+
+    /// Between requests: deliver events, and drop them once handled so the queue doesn't grow.
+    public func idle(_ seconds: Double) {
+        hid.pump(seconds)
+        _ = hid.drainEvents()
+    }
 }
 
 public struct Battery {
