@@ -20,11 +20,19 @@ public final class X3Mouse {
         guard let len = Safety.reportLength[id] else { throw X3Error.blocked("unknown report 0x\(hex8(id))") }
         var req = [UInt8](repeating: 0, count: 8)
         req[0] = 0xa0; req[1] = id; req[2] = UInt8(len); req[4] = parameter
-        try retryingStalls { try hid.setFeature(req) }
+        // A sleeping mouse or a busy receiver can ignore the request, so ask again a few times. Collecting
+        // the target first clears any earlier grant the receiver may still be holding for it.
         var granted = false
-        for _ in 0..<10 {
-            hid.pump(0.1)
-            if let g = try? hid.getFeature(0xa0, length: 8), g.count > 1, g[1] == 0x01 { granted = true; break }
+        for attempt in 0..<4 where !granted {
+            if attempt > 0 {
+                _ = try? hid.getFeature(id, length: len)
+                hid.pump(0.75)
+            }
+            try retryingStalls { try hid.setFeature(req) }
+            for _ in 0..<10 {
+                hid.pump(0.1)
+                if let g = try? hid.getFeature(0xa0, length: 8), g.count > 1, g[1] == 0x01 { granted = true; break }
+            }
         }
         guard granted else { throw X3Error.readDenied(id) }
         var data: [UInt8] = []

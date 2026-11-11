@@ -21,7 +21,7 @@ public enum X3Error: Error, CustomStringConvertible {
             return "Could not open the mouse (\(hex32(r)))."
         case .ioFailed(let what, let r): return "\(what) failed (\(hex32(r)))."
         case .blocked(let why): return "Blocked for safety: \(why)"
-        case .readDenied(let id): return "Mouse refused read access for report 0x\(hex8(id))."
+        case .readDenied(let id): return "The mouse didn't answer (report 0x\(hex8(id))). It may be asleep: move it, then press Read from mouse."
         case .nack(let id): return "Mouse rejected report 0x\(hex8(id)); nothing was changed."
         case .unexpected(let s): return s
         }
