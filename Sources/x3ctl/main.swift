@@ -15,6 +15,7 @@ usage: x3ctl <command> [--trace]
   debounce [ms]                show or set button debounce (4-50, even)
   sleep [min] [deep min]       show or set the sleep (0.5-30) and deep-sleep (1-60) timers
   buttons                      show the button assignments
+  buttons set <slot> <hex>     assign a simple action to a slot (checked on readback)
   battery                      wait for a battery report
   events [seconds]             print the mouse's status events (DPI button, battery…)
   measure [seconds] [mm]       count pointer reports while you move the mouse
@@ -117,6 +118,9 @@ do {
             print("debounce: \(try mouse.readPreferences().debounceMs) ms")
         }
     case "buttons":
+        if args.count > 3, args[1] == "set", let slot = Int(args[2]), let action = UInt8(args[3].replacingOccurrences(of: "0x", with: ""), radix: 16) {
+            try mouse.setButton(slot: slot, action: action)
+        }
         for s in try mouse.readButtons().used {
             print(String(format: "  slot %2d: %@", s.slot, s.actionName))
         }

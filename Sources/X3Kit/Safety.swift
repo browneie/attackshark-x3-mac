@@ -10,10 +10,10 @@ enum Safety {
     ]
 
     /// Byte 1 of a write is the total report length; the mouse's replies carry that value + 2.
-    static let lengthByte: [UInt8: UInt8] = [0x04: 0x34, 0x05: 0x0d, 0x06: 0x09]
+    static let lengthByte: [UInt8: UInt8] = [0x04: 0x34, 0x05: 0x0d, 0x06: 0x09, 0x08: 0x3b]
 
     static let readable: Set<UInt8> = [0x04, 0x05, 0x06, 0x08, 0x0b]
-    static let writable: Set<UInt8> = [0xa0, 0x04, 0x05, 0x06]
+    static let writable: Set<UInt8> = [0xa0, 0x04, 0x05, 0x06, 0x08]
     static let forbidden: Set<UInt8> = [0x09, 0x10, 0x22]
 
     static func checkRead(_ id: UInt8) throws {
@@ -49,6 +49,14 @@ enum Safety {
                   Preferences.sleepRange.contains(Int(b[9])),
                   Preferences.deepSleepRange.contains(Int(b[4] & 0xf0 | b[5] >> 4)) else {
                 throw X3Error.blocked("malformed preferences report")
+            }
+        case 0x08:
+            let actions = (0..<18).map { b[3 + $0 * 3] }
+            let allowed = Set(ButtonMap.assignable + [0x3c])
+            guard b[1] == lengthByte[0x08], (1...5).contains(b[2]),
+                  ButtonMap.checksum(b) == UInt16(b[57]) << 8 | UInt16(b[58]),
+                  actions.allSatisfy(allowed.contains), actions.contains(0x02) else {
+                throw X3Error.blocked("malformed button report, or one that would leave no left click")
             }
         default: break
         }

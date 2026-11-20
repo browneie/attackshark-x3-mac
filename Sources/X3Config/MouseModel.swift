@@ -109,6 +109,10 @@ final class MouseModel: ObservableObject {
         run("Setting deep-sleep timer…") { try $0.setSleep(deepSleepMinutes: minutes) }
     }
 
+    func setButton(slot: Int, action: UInt8) {
+        run("Changing a button…") { try $0.setButton(slot: slot, action: action) }
+    }
+
     func setDebounce(_ ms: Int) {
         run("Setting debounce…") { try $0.setDebounce(ms: ms) }
     }

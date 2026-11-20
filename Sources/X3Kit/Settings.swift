@@ -172,7 +172,7 @@ public struct ButtonSlot {
 
     public var actionName: String { ButtonSlot.names[action] ?? String(format: "action 0x%02x", action) }
 
-    static let names: [UInt8: String] = [
+    public static let names: [UInt8: String] = [
         0x01: "Disabled", 0x02: "Left click", 0x03: "Right click", 0x04: "Middle click", 0x05: "Back", 0x06: "Forward",
         0x07: "Double click", 0x08: "Fire", 0x09: "Scroll up", 0x0a: "Scroll down", 0x0d: "DPI cycle", 0x0e: "DPI +",
         0x0f: "DPI −", 0x10: "Sniper DPI", 0x11: "Keyboard key", 0x12: "Macro", 0x13: "Launch program",
@@ -182,17 +182,41 @@ public struct ButtonSlot {
     ]
 }
 
-/// Report 0x08, 59 bytes: 18 three-byte slots from offset 3. Read-only here: the firmware reorders slots on
-/// readback and write-protects some, so remapping needs a per-slot mapping scan first.
+/// Report 0x08, 59 bytes: 18 three-byte slots from offset 3, then a checksum of bytes 3-56.
+/// The firmware write-protects the mode key (0x3c), and on the X11 it stores some slots at a different
+/// position from where they were written, so every write is checked slot by slot on readback.
 public struct ButtonMap {
+    public let raw: [UInt8]
     public let slots: [ButtonSlot]
 
     init(raw: [UInt8]) throws {
-        guard raw.count >= 59, raw[0] == 0x08 else { throw X3Error.unexpected("Button report doesn't match: \(hexString(raw))") }
+        guard raw.count >= 59, raw[0] == 0x08, ButtonMap.checksum(raw) == UInt16(raw[57]) << 8 | UInt16(raw[58]) else {
+            throw X3Error.unexpected("Button report doesn't match: \(hexString(raw))")
+        }
+        self.raw = Array(raw.prefix(59))
         slots = (0..<18).map { i in ButtonSlot(slot: i + 1, action: raw[3 + i * 3], modifiers: raw[4 + i * 3], usage: raw[5 + i * 3]) }
     }
 
     public var used: [ButtonSlot] { slots.filter { $0.action != 0x01 } }
+
+    static func checksum(_ b: [UInt8]) -> UInt16 { b[3...56].reduce(0) { $0 &+ UInt16($1) } }
+
+    /// Simple actions that need no key, macro or program data.
+    public static let assignable: [UInt8] = [
+        0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0d, 0x0e, 0x0f, 0x10,
+        0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x28, 0x01,
+    ]
+
+    func setting(slot: Int, action: UInt8) -> [UInt8] {
+        var b = raw
+        b[1] = Safety.lengthByte[0x08]!
+        b[3 + (slot - 1) * 3] = action
+        b[4 + (slot - 1) * 3] = 0
+        b[5 + (slot - 1) * 3] = 0
+        let c = ButtonMap.checksum(b)
+        b[57] = UInt8(c >> 8); b[58] = UInt8(c & 0xff)
+        return b
+    }
 }
 
 /// Stage DPI encoding of this firmware family (PAW3311-style register table).

@@ -94,6 +94,29 @@ public final class X3Mouse {
     public func readPreferences() throws -> Preferences { try Preferences(raw: read(0x05)) }
     public func readButtons() throws -> ButtonMap { try ButtonMap(raw: read(0x08)) }
 
+    /// Changes one slot, then checks every slot on readback. If anything else moved, the old layout is written back.
+    @discardableResult
+    public func setButton(slot: Int, action: UInt8) throws -> ButtonMap {
+        guard (1...18).contains(slot) else { throw X3Error.blocked("slot must be 1–18") }
+        guard ButtonMap.assignable.contains(action) else { throw X3Error.blocked("action 0x\(hex8(action)) can't be assigned here") }
+        let current = try readButtons()
+        guard current.slots[slot - 1].action != 0x3c else { throw X3Error.blocked("the mode key is fixed by the firmware") }
+        let target = current.setting(slot: slot, action: action)
+        try write(target)
+        listen(settleAfterWrite)
+        let after = try readButtons()
+        let moved = (0..<18).filter { after.slots[$0].action != target[3 + $0 * 3] }
+        if !moved.isEmpty {
+            var restore = current.raw
+            restore[1] = Safety.lengthByte[0x08]!
+            try? write(restore)
+            listen(settleAfterWrite)
+            let detail = moved.map { "slot \($0 + 1) reads \(after.slots[$0].actionName)" }.joined(separator: ", ")
+            throw X3Error.unexpected("The mouse stored that differently (\(detail)), so the previous layout was put back")
+        }
+        return after
+    }
+
     /// Changes the documented option fields of report 0x04; stage codes and colours are copied through untouched.
     @discardableResult
     public func apply(_ dpi: DPISettings) throws -> DPISettings {

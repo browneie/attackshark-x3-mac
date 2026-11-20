@@ -82,7 +82,7 @@ struct ContentView: View {
                             power
                         }
                         .fixedSize(horizontal: false, vertical: true)
-                        MouseMapCard(slots: model.snapshot.buttons, accent: accent)
+                        MouseMapCard(slots: model.snapshot.buttons, accent: accent) { model.setButton(slot: $0, action: $1) }
                     } else if !model.busy {
                         emptyState
                     }
@@ -310,12 +310,9 @@ struct HeroCard: View {
         HStack(spacing: 28) {
             ZStack {
                 Circle().fill(accent.opacity(0.16)).frame(width: 170, height: 170).blur(radius: 28)
-                MouseShape(view: .top).fill(Palette.well).frame(width: 96, height: 150)
-                MouseShape(view: .top).stroke(accent.opacity(0.9), lineWidth: 2).frame(width: 96, height: 150)
-                MouseShape.details(width: 96, height: 150).stroke(Color.white.opacity(0.25), lineWidth: 1)
-                    .frame(width: 96, height: 150)
+                MouseArt(side: .top, accent: accent, glow: true).frame(width: 112, height: 172)
             }
-            .frame(width: 180, height: 180)
+            .frame(width: 190, height: 190)
 
             VStack(alignment: .leading, spacing: 14) {
                 Text("ACTIVE DPI · STAGE \(dpi.activeStage)").font(.caption.weight(.bold)).tracking(1.4).foregroundStyle(.secondary)

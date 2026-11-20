@@ -44,7 +44,7 @@ not what the app sent.
 | Angle snapping, motion sync, ripple control | ✅ | ✅ | |
 | Debounce (key response) | ✅ | ✅ 4–50 ms | Verified (4 → 6 → 4) |
 | Sleep / deep-sleep timers | ✅ | ✅ | Sleep 0.5–30 min, deep sleep 1–60 min |
-| Button assignments | ✅ | 🚫 | Firmware reorders and write-protects slots; needs a mapping scan |
+| Button assignments | ✅ | ✅ | Simple actions only; each change is read back. The mode key is fixed, and one button always keeps left click |
 | Battery | ✅ | — | From the mouse's own status events, which arrive every few seconds |
 | RGB | — | — | The X3 has no RGB lighting. Report 0x05 stores colours, but the lighting mode reads "off" |
 
