@@ -224,7 +224,6 @@ struct MouseMapCard: View {
         slots.first { $0.slot == slot }?.actionName ?? "Not assigned"
     }
 
-    private static let placed: Set<Int> = [1, 2, 3, 4, 5, 7, 8, 9]
 
     var body: some View {
         Card(title: "Buttons", icon: "computermouse", accessory: { Text("Click a button to change it") }) {
@@ -251,35 +250,8 @@ struct MouseMapCard: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            let others = slots.filter { !Self.placed.contains($0.slot) && $0.action != 0x3c }
-            HStack(spacing: 10) {
-                ForEach(others, id: \.slot) { s in
-                    ActionMenu(slot: s.slot, current: s.action, assign: assign) {
-                        HStack(spacing: 6) {
-                            Text(otherTitle(s.slot)).foregroundStyle(.secondary)
-                            Text(s.actionName).fontWeight(.semibold)
-                            Image(systemName: "chevron.up.chevron.down").font(.caption2).foregroundStyle(accent)
-                        }
-                        .font(.callout)
-                        .padding(.horizontal, 10).padding(.vertical, 6)
-                        .background(Palette.well, in: RoundedRectangle(cornerRadius: 8))
-                        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(accent.opacity(0.35)))
-                        .contentShape(RoundedRectangle(cornerRadius: 8))
-                    }
-                    .fixedSize()
-                }
-                Spacer()
-            }
             Text("Every change is read back from the mouse. The mode key can't be changed, and one button always keeps left click.")
                 .font(.caption).foregroundStyle(.secondary)
-        }
-    }
-
-    private func otherTitle(_ slot: Int) -> String {
-        switch slot {
-        case 17: return "Wheel down"
-        case 18: return "Wheel up"
-        default: return "Slot \(slot)"
         }
     }
 }
